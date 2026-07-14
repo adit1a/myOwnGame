@@ -1,5 +1,7 @@
 #include <vector>
 #include "raylib.h"
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -11,17 +13,24 @@ struct Peluru{
 int main (){
     const int lebarL=800;
     const int tinggiL=400;
-    InitWindow(lebarL,tinggiL, "Belajar Logika facing");
+    InitWindow(lebarL,tinggiL, "OwnGame");
     SetTargetFPS(60);
+
+    srand(time(0));
 
     // pemain/player
     Rectangle pemain ={400,300, 40, 40};
     float kecepatanP=4.0f;
     // kunci arah pemain
     float arahHadap=1.0f;
+    int skorBantai = 0; // skor membunuh musuh
     // khas c++ wadahnya yang dinamis
     vector<Peluru> daftarPeluru;
     float speedPeluru =8.0f;
+    // menambahkan musuh
+    Rectangle musuh={800, 200, 40, 40};
+    float kecepatanM=3.0f;
+
     while(!WindowShouldClose()){
         // logika gerak
         if(IsKeyDown(KEY_D)){
@@ -57,17 +66,39 @@ int main (){
         while(it != daftarPeluru.end()){
            it->kotak.x += speedPeluru * it->arah;
         // jika peluru keluar dari layar, akan dihapus dari RAM
-            if(it->kotak.x>lebarL || it->kotak.x <0){
-                it=daftarPeluru.erase(it);
+        //logika ketika peluru bertabrakan
+            if(CheckCollisionRecs(it->kotak, musuh)){
+                skorBantai += 1;
+                musuh.x =lebarL;
+                musuh.y = rand() %(tinggiL-60)+20;
+                it = daftarPeluru.erase(it);
+            }else if (it->kotak.x>lebarL || it->kotak.x <0){
+                it = daftarPeluru.erase(it);
             }else{
                 it++;
-                }
+            }
+        }
+            // logika jika peluru peluru menabrak musuh
+            if(CheckCollisionRecs(musuh, pemain)){
+                //untuk mereset player jika kalah
+                pemain.x = 100;
+                pemain.y = 200;
+                // reset musuh juga
+                musuh.x =lebarL;
+                musuh.y = rand() % (tinggiL -60 )+ 20;
+            }
+            musuh.x-=kecepatanM;
+            if(musuh.x < -musuh.width){
+                musuh.x =lebarL;
+
+                musuh.y = rand() % (tinggiL-60)+20;
             }
          
         BeginDrawing();
             ClearBackground(RAYWHITE);
                  DrawRectangleRec(pemain, BLUE);
                 // gambar indikator arah hadap kecil didepan layar
+                DrawRectangleRec(musuh, RED);
                 if(arahHadap == 1.0f) DrawRectangle(pemain.x + 35, pemain.y + 15, 5, 10, BLACK);
                 else DrawRectangle(pemain.x, pemain.y + 15, 5, 10, BLACK);
                 // gambar semua peluru yang sedang aktif (kuning)
@@ -75,10 +106,12 @@ int main (){
                     DrawRectangleRec(p.kotak, GOLD);
                 }
                 // HUD INFO
-                DrawText("'TEKAN SPACE / KLIK KIRI UNTUK MENEMBAK'", 20,20,20, DARKGRAY);
-                DrawText(TextFormat("peluru aktif di memori: %d", daftarPeluru.size()), 20, 50, 18, RED);
+                DrawText(TextFormat("MUSUH DI BANTAI : %d", skorBantai), 20, 20, 22, RED );
+                DrawText("Tembak Kotak Merah sebelum di menabrakmu", 20, 360, 18, GRAY);
             EndDrawing();
     }
         CloseWindow();
         return 0;
+        
 }
+        
